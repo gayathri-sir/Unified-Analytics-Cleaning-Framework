@@ -1,0 +1,8 @@
+# System & IDE files
+.DS_Store
+Thumbs.db
+*.log
+
+# Workspace temporary files
+node_modules/
+.venv/

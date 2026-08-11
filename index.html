@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Analytics & Data Cleaning Dashboard</title>
+  <meta name="description" content="High-performance data analytics dashboard featuring dataset upload, missing value & duplicate cleaning, automated KPIs (CTR, CR, CPI), anomaly detection, and natural language macro execution.">
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- External CDNs: Chart.js, PapaParse, SheetJS (XLSX), Lucide Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header Navbar -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-logo">
+          <i data-lucide="bar-chart-3"></i>
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <h1 class="brand-title">Vantage Analytics</h1>
+            <span class="brand-badge">Engine v2.4</span>
+          </div>
+          <span style="font-size: 0.75rem; color: var(--text-muted);">Data Cleaning & KPI Analytics Studio</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Preset Dataset Selector -->
+        <select id="presetDatasetSelect" class="select-input">
+          <option value="marketing_10k">📊 App Marketing Campaign (10,000 Rows)</option>
+          <option value="marketing_25k">⚡ Multi-Channel Benchmark (25,000 Rows)</option>
+          <option value="marketing_50k">🚀 High-Volume Enterprise (50,000 Rows)</option>
+        </select>
+
+        <button id="openUploadBtn" class="btn btn-secondary">
+          <i data-lucide="upload-cloud"></i> Upload Dataset
+        </button>
+
+        <button id="themeToggleBtn" class="btn btn-secondary btn-icon" title="Toggle Light/Dark Theme">
+          <i data-lucide="moon"></i>
+        </button>
+
+        <button id="exportCsvBtn" class="btn btn-success">
+          <i data-lucide="download"></i> Export Clean CSV
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="dashboard-main">
+
+      <!-- AI Natural Language Macro Bar -->
+      <section class="glass-panel nl-command-section">
+        <div class="nl-header">
+          <div class="nl-title">
+            <i data-lucide="sparkles"></i> Natural Language Workflow Command Bar
+          </div>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">Type single compound instruction to automate steps</span>
+        </div>
+
+        <div class="nl-input-wrapper">
+          <div class="nl-input-box">
+            <i data-lucide="command" style="color: var(--accent-primary);"></i>
+            <input type="text" id="nlCommandInput" placeholder="e.g. Clean data, calculate CTR, show installs trend" />
+          </div>
+          <button id="runNlCommandBtn" class="btn btn-primary">
+            <i data-lucide="play"></i> Execute Macro
+          </button>
+        </div>
+
+        <!-- Quick Prompt Chips -->
+        <div class="chip-presets">
+          <span style="font-size: 0.78rem; color: var(--text-muted); align-self: center;">Quick Macros:</span>
+          <button class="preset-chip" data-prompt="Clean data, calculate CTR, show installs trend">
+            <i data-lucide="zap"></i> Clean data, calculate CTR, show installs trend
+          </button>
+          <button class="preset-chip" data-prompt="Remove duplicates, handle missing values, highlight CPI anomalies">
+            <i data-lucide="shield-check"></i> Remove duplicates & highlight CPI anomalies
+          </button>
+          <button class="preset-chip" data-prompt="Clean data, filter Meta channel, plot cost vs CPI">
+            <i data-lucide="filter"></i> Clean data & plot Meta cost vs CPI
+          </button>
+        </div>
+
+        <!-- Macro Pipeline Execution Stepper -->
+        <div id="macroPipeline" class="macro-pipeline">
+          <!-- Dynamically populated execution steps -->
+        </div>
+      </section>
+
+      <!-- Cleaning Audit & Health Card + Actions Bar -->
+      <section class="toolbar-section">
+        <div class="cleaning-audit-card">
+          <div class="health-gauge">
+            <div class="health-score-val" id="healthScoreVal">94%</div>
+          </div>
+          <div class="audit-stats-grid">
+            <div class="audit-stat-item">
+              <span class="audit-stat-label">Total Rows</span>
+              <span class="audit-stat-value" id="auditTotalRows">10,150</span>
+            </div>
+            <div class="audit-stat-item">
+              <span class="audit-stat-label">Duplicates Removed</span>
+              <span class="audit-stat-value" id="auditDuplicates">0</span>
+            </div>
+            <div class="audit-stat-item">
+              <span class="audit-stat-label">Blanks Handled</span>
+              <span class="audit-stat-value" id="auditBlanks">0</span>
+            </div>
+            <div class="audit-stat-item">
+              <span class="audit-stat-label">Anomalies Tagged</span>
+              <span class="audit-stat-value" id="auditAnomaliesCount" style="color: var(--accent-danger);">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Data Cleaning Action Toolbar -->
+        <div class="tool-group">
+          <button id="btnRemoveDuplicates" class="btn btn-secondary">
+            <i data-lucide="copy-x"></i> Remove Duplicates
+          </button>
+          <button id="btnRemoveBlanks" class="btn btn-secondary">
+            <i data-lucide="trash-2"></i> Remove Blanks
+          </button>
+          <button id="btnHandleMissing" class="btn btn-secondary">
+            <i data-lucide="wand-2"></i> Fill Missing Values
+          </button>
+          <button id="btnRunAnomalies" class="btn btn-warning">
+            <i data-lucide="alert-triangle"></i> Highlight Anomalies
+          </button>
+        </div>
+      </section>
+
+      <!-- KPI Metrics Banner -->
+      <section class="kpi-grid">
+        <div class="glass-panel kpi-card kpi-ctr">
+          <div class="kpi-header">
+            <span class="kpi-title">CTR (Click-Through Rate)</span>
+            <div class="kpi-icon-badge" style="color: var(--accent-primary);"><i data-lucide="mouse-pointer-click"></i></div>
+          </div>
+          <div class="kpi-value" id="kpiCtrVal">3.85%</div>
+          <div class="kpi-subtext">
+            <span class="trend-badge trend-up"><i data-lucide="arrow-up-right"></i> +0.4%</span> vs baseline
+          </div>
+        </div>
+
+        <div class="glass-panel kpi-card kpi-cr">
+          <div class="kpi-header">
+            <span class="kpi-title">Conversion Rate (CR)</span>
+            <div class="kpi-icon-badge" style="color: var(--accent-secondary);"><i data-lucide="target"></i></div>
+          </div>
+          <div class="kpi-value" id="kpiCrVal">12.40%</div>
+          <div class="kpi-subtext">
+            <span class="trend-badge trend-up"><i data-lucide="arrow-up-right"></i> +1.2%</span> efficiency
+          </div>
+        </div>
+
+        <div class="glass-panel kpi-card kpi-cpi">
+          <div class="kpi-header">
+            <span class="kpi-title">CPI (Cost Per Install)</span>
+            <div class="kpi-icon-badge" style="color: var(--accent-pink);"><i data-lucide="dollar-sign"></i></div>
+          </div>
+          <div class="kpi-value" id="kpiCpiVal">$3.24</div>
+          <div class="kpi-subtext">
+            <span class="trend-badge trend-down"><i data-lucide="arrow-down-right"></i> -$0.18</span> optimized
+          </div>
+        </div>
+
+        <div class="glass-panel kpi-card kpi-installs">
+          <div class="kpi-header">
+            <span class="kpi-title">Total Installs</span>
+            <div class="kpi-icon-badge" style="color: var(--accent-emerald);"><i data-lucide="download-cloud"></i></div>
+          </div>
+          <div class="kpi-value" id="kpiInstallsVal">148,920</div>
+          <div class="kpi-subtext">
+            <span style="color: var(--text-muted);">Across all campaigns</span>
+          </div>
+        </div>
+
+        <div class="glass-panel kpi-card kpi-spend">
+          <div class="kpi-header">
+            <span class="kpi-title">Total Spend</span>
+            <div class="kpi-icon-badge" style="color: var(--accent-warning);"><i data-lucide="wallet"></i></div>
+          </div>
+          <div class="kpi-value" id="kpiSpendVal">$482,500</div>
+          <div class="kpi-subtext">
+            <span style="color: var(--text-muted);">Total marketing cost</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Interactive Analytics Section: Charts & Anomaly Feed -->
+      <section class="analytics-grid">
+        <!-- Main Interactive Chart Container -->
+        <div class="glass-panel">
+          <div class="chart-header">
+            <div class="chart-title">
+              <i data-lucide="line-chart" style="color: var(--accent-primary);"></i>
+              <span id="chartHeadingTitle">Installs & Conversions Performance Trend</span>
+            </div>
+
+            <!-- Chart Switcher Tabs -->
+            <div class="chart-tab-group">
+              <button class="chart-tab active" data-chart="installs_trend">Installs & Conv</button>
+              <button class="chart-tab" data-chart="cost_cpi">Cost vs CPI</button>
+              <button class="chart-tab" data-chart="channel_breakdown">Channel Breakdown</button>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <canvas id="mainAnalyticsChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Anomaly Insights Sidebar Panel -->
+        <div class="glass-panel anomaly-panel">
+          <div class="chart-header">
+            <div class="chart-title" style="color: var(--accent-danger);">
+              <i data-lucide="alert-circle"></i> Automated Anomaly Feed
+            </div>
+            <span id="anomalyCountBadge" class="badge-cell badge-anomaly-flag">0 Anomalies</span>
+          </div>
+
+          <div id="anomalyFeedList" class="anomaly-feed">
+            <!-- Anomaly Cards injected here -->
+            <div style="text-align: center; color: var(--text-muted); padding: 2rem 0; font-size: 0.85rem;">
+              Click "Highlight Anomalies" or run macro to detect statistical outliers.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Dataset Grid Table Section -->
+      <section class="glass-panel">
+        <div class="table-toolbar">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <h3 style="font-size: 1rem; font-weight: 600;">Cleaned Dataset View</h3>
+            <span id="tableRecordCount" style="font-size: 0.8rem; color: var(--text-muted);">(Showing 10,000 records)</span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <!-- Channel Filter Select -->
+            <select id="channelFilterSelect" class="select-input">
+              <option value="ALL">All Channels</option>
+              <option value="Meta">Meta</option>
+              <option value="Google Ads">Google Ads</option>
+              <option value="TikTok">TikTok</option>
+              <option value="Apple Search Ads">Apple Search Ads</option>
+              <option value="LinkedIn">LinkedIn</option>
+            </select>
+
+            <!-- Table Search Input -->
+            <div class="search-filter-box">
+              <i data-lucide="search" style="color: var(--text-muted); width: 16px; height: 16px;"></i>
+              <input type="text" id="tableSearchInput" placeholder="Search campaign or date..." />
+            </div>
+          </div>
+        </div>
+
+        <!-- Virtualized Paginated Data Table -->
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr id="tableHeadRow">
+                <!-- Dynamically generated headers -->
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <!-- Data rows rendered here -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-bar">
+          <div id="paginationInfo">Page 1 of 200 (Rows 1 - 50)</div>
+          <div class="pagination-controls">
+            <button id="btnPrevPage" class="btn btn-secondary btn-icon" disabled><i data-lucide="chevron-left"></i></button>
+            <span id="currentPageNum" style="font-weight: 600; padding: 0 0.5rem;">1</span>
+            <button id="btnNextPage" class="btn btn-secondary btn-icon"><i data-lucide="chevron-right"></i></button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      Vantage Analytics Studio &copy; 2026. Data Analytics & Data Cleaning Engine.
+    </footer>
+  </div>
+
+  <!-- Modal Drawer: File Upload Dropzone -->
+  <div id="uploadModal" class="modal-backdrop">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title">
+          <i data-lucide="file-up" style="color: var(--accent-primary);"></i> Upload Custom Dataset
+        </div>
+        <button id="closeUploadModalBtn" class="modal-close"><i data-lucide="x"></i></button>
+      </div>
+
+      <div id="dropzone" class="dropzone">
+        <i data-lucide="upload-cloud" class="dropzone-icon"></i>
+        <div style="font-weight: 600; font-size: 1rem;">Drag and drop your dataset here</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">Supports CSV, TSV, JSON, Excel (.xlsx, .xls)</div>
+        <input type="file" id="fileInput" accept=".csv, .tsv, .json, .xlsx, .xls" style="display: none;" />
+        <button class="btn btn-primary" style="margin-top: 0.5rem;" onclick="document.getElementById('fileInput').click()">Browse Files</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/sampleData.js"></script>
+  <script src="js/dataEngine.js"></script>
+  <script src="js/anomalyEngine.js"></script>
+  <script src="js/macroEngine.js"></script>
+  <script src="js/chartManager.js"></script>
+  <script src="js/app.js"></script>
+  
+  <script>
+    // Initialize Lucide Icons
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
